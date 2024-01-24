@@ -7,10 +7,13 @@ author 'TheStoicBear'
 description 'Stoic-Reg'
 
 client_script 'client.lua'
-server_script 'server.lua'
+server_scripts {
+    "@oxmysql/lib/MySQL.lua",
+    'server.lua'
+}
 
 shared_scripts {
     "@ND_Core/init.lua",
     "@ox_lib/init.lua",
-    "@oxmysql/lib/MySQL.lua"
+
 }
