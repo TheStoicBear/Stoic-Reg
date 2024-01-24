@@ -19,12 +19,13 @@ AddEventHandler('registerVehicle', function(vehicleProps)
     local player = NDCore.getPlayer(src)
     if player then
         print('Player found for source ' .. src)
+
         -- Set the vehicle as owned using NDCore function
         local vehicleId = NDCore.setVehicleOwned(player.id, vehicleProps, true)
 
         if vehicleId then
             print('Vehicle registered with ID: ' .. vehicleId)
-            Wait(1500) -- Wait for a moment to ensure the player is out of the vehicle
+            Wait(500) -- Wait for a moment to ensure the player is out of the vehicle
             -- Spawn the vehicle after registration
             local coords = GetEntityCoords(GetPlayerPed(src))
             local spawnCoords = vec4(coords.x, coords.y, coords.z, coords.w or coords.heading or 0.0)
@@ -32,31 +33,37 @@ AddEventHandler('registerVehicle', function(vehicleProps)
 
             if spawnedVehicle then
                 print('Vehicle spawned successfully.')
+            
                 -- Display success chat message on the client
                 TriggerEvent('displaySuccessMessage', src, 'Vehicle registered and spawned successfully!')
+            
                 -- Wait for a moment to ensure the player has fully exited the vehicle
                 Wait(500)
+            
                 -- Teleport the player into the spawned vehicle
                 local vehicleHandle = NetworkGetEntityFromNetworkId(spawnedVehicle.netId)
                 TaskWarpPedIntoVehicle(GetPlayerPed(src), vehicleHandle, -1)
             else
                 print('Failed to spawn the vehicle. Check SpawnVehicle implementation.')
+            
                 -- Display error chat message on the client
                 TriggerEvent('displayErrorMessage', src, 'Failed to spawn the vehicle. Check implementation.')
             end
         else
             print('Failed to register the vehicle. Check setVehicleOwned implementation.')
+
             -- Display error chat message on the client
             TriggerEvent('displayErrorMessage', src, 'Failed to register the vehicle. Check implementation.')
         end
     else
         print('Player not found for source ' .. src)
+
         -- Display error chat message on the client
         TriggerEvent('displayErrorMessage', src, 'Player not found for source.')
     end
 end)
 
-function SpawnVehicle(source, vehicleId, coords)
+function SpawnVehicle(source, vehicleId)
     local player = NDCore.getPlayer(source)
     if not player then
         return nil
@@ -70,11 +77,22 @@ function SpawnVehicle(source, vehicleId, coords)
     -- Update the stored status of the vehicle to 0 (not stored)
     MySQL.query.await("UPDATE nd_vehicles SET stored = ? WHERE id = ?", {0, vehicleId})
 
+    -- Get the player's coordinates
+    local playerCoords = GetEntityCoords(GetPlayerPed(source))
+
+    -- Calculate the coordinates in front of the player
+    local spawnCoords = vec4(
+        playerCoords.x + 3.0,  -- Adjust the distance in front of the player as needed
+        playerCoords.y,
+        playerCoords.z,
+        playerCoords.heading or 0.0
+    )
+
     -- Create and return the spawned vehicle
     local spawnedVehicle = NDCore.createVehicle({
         owner = player.id,
         model = vehicle.properties.model,
-        coords = vec4(coords.x, coords.y, coords.z, coords.w or coords.heading or 0.0),
+        coords = spawnCoords,
         properties = vehicle.properties,
         vehicleId = vehicleId,
         source = source
@@ -82,5 +100,9 @@ function SpawnVehicle(source, vehicleId, coords)
 
     -- Get the handle of the spawned vehicle
     local vehicleHandle = NetworkGetEntityFromNetworkId(spawnedVehicle.netId)
+
+    -- Teleport the player into the spawned vehicle immediately
+    TaskWarpPedIntoVehicle(PlayerPedId(), vehicleHandle, -1)
+
     return spawnedVehicle
 end
