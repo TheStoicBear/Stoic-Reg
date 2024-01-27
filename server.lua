@@ -102,7 +102,7 @@ function SpawnVehicle(source, vehicleId)
     local vehicleHandle = NetworkGetEntityFromNetworkId(spawnedVehicle.netId)
 
     -- Teleport the player into the spawned vehicle immediately
-    TaskWarpPedIntoVehicle(PlayerPedId(), vehicleHandle, -1)
+    TaskWarpPedIntoVehicle(source, vehicleHandle, -1)
 
     return spawnedVehicle
 end
