@@ -1,3 +1,8 @@
+# For Andy from NDFrammework
+# I did not make, I do not claim rights and it's Open Source.
+
+
+
 # Stoic-Reg Resource
 
 **Stoic-Reg** is a resource designed for Grand Theft Auto V (GTA V) servers using the NDCore framework. It provides a streamlined vehicle registration and spawning system(will delete and respawn the saved vehicle), enhancing the gameplay experience.
