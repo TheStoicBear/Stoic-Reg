@@ -20,6 +20,15 @@ AddEventHandler('registerVehicle', function(vehicleProps)
     if player then
         print('Player found for source ' .. src)
 
+        -- Check if the license plate is already registered
+        if IsPlateAlreadyRegistered(vehicleProps.plate) then
+            print('License plate is already registered.')
+
+            -- Display error chat message on the client
+            TriggerEvent('displayErrorMessage', src, 'License plate is already registered.')
+            return
+        end
+
         -- Set the vehicle as owned using NDCore function
         local vehicleId = NDCore.setVehicleOwned(player.id, vehicleProps, true)
 
@@ -63,7 +72,7 @@ AddEventHandler('registerVehicle', function(vehicleProps)
     end
 end)
 
-function SpawnVehicle(source, vehicleId)
+function SpawnVehicle(source, vehicleId, spawnCoords)
     local player = NDCore.getPlayer(source)
     if not player then
         return nil
@@ -75,18 +84,7 @@ function SpawnVehicle(source, vehicleId)
     end
 
     -- Update the stored status of the vehicle to 0 (not stored)
-    MySQL.query.await("UPDATE nd_vehicles SET stored = ? WHERE id = ?", {0, vehicleId})
-
-    -- Get the player's coordinates
-    local playerCoords = GetEntityCoords(GetPlayerPed(source))
-
-    -- Calculate the coordinates in front of the player
-    local spawnCoords = vec4(
-        playerCoords.x + 3.0,  -- Adjust the distance in front of the player as needed
-        playerCoords.y,
-        playerCoords.z,
-        playerCoords.heading or 0.0
-    )
+    MySQL.Async.execute("UPDATE nd_vehicles SET stored = ? WHERE id = ?", {0, vehicleId})
 
     -- Create and return the spawned vehicle
     local spawnedVehicle = NDCore.createVehicle({
@@ -98,11 +96,28 @@ function SpawnVehicle(source, vehicleId)
         source = source
     })
 
-    -- Get the handle of the spawned vehicle
-    local vehicleHandle = NetworkGetEntityFromNetworkId(spawnedVehicle.netId)
+    if spawnedVehicle then
+        -- Get the handle of the spawned vehicle
+        local vehicleHandle = NetworkGetEntityFromNetworkId(spawnedVehicle.netId)
 
-    -- Teleport the player into the spawned vehicle immediately
-    TaskWarpPedIntoVehicle(source, vehicleHandle, -1)
+        -- Teleport the player into the spawned vehicle immediately
+        TaskWarpPedIntoVehicle(source, vehicleHandle, -1)
+    end
 
     return spawnedVehicle
+end
+
+-- Function to check if a license plate is already registered
+function IsPlateAlreadyRegistered(plate)
+    local query = "SELECT COUNT(*) as plate_count FROM nd_vehicles WHERE plate = ?"
+    local result = MySQL.Sync.fetchScalar(query, {plate})
+
+    -- Check if the result is not nil and if the plate count is greater than 0
+    if result ~= nil and tonumber(result) > 0 then
+        -- Plate is already registered
+        return true
+    else
+        -- Plate is not registered
+        return false
+    end
 end
