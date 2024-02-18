@@ -1,14 +1,6 @@
--- Event to display success chat message when the vehicle registration is successful
-RegisterNetEvent('displaySuccessMessage')
-AddEventHandler('displaySuccessMessage', function(src, message)
-    TriggerClientEvent('chatMessage', src, 'SYSTEM', {0, 255, 0}, message)
-end)
-
--- Event to display error chat message
-RegisterNetEvent('displayErrorMessage')
-AddEventHandler('displayErrorMessage', function(src, message)
-    TriggerClientEvent('chatMessage', src, 'SYSTEM', {255, 0, 0}, message)
-end)
+-- Configuration: Set your registration and title transfer fees
+local registrationFee = 500
+local titleTransferFee = 300
 
 -- RegisterServerEvent 'registerVehicle'
 RegisterServerEvent('registerVehicle')
@@ -20,57 +12,217 @@ AddEventHandler('registerVehicle', function(vehicleProps)
     if player then
         print('Player found for source ' .. src)
 
-        -- Check if the license plate is already registered
-        if IsPlateAlreadyRegistered(vehicleProps.plate) then
-            print('License plate is already registered.')
+        -- Check if the player has enough money for registration
+        if player.getData("bank") < registrationFee then
+            print('Insufficient funds to register the vehicle.')
 
-            -- Display error chat message on the client
-            TriggerEvent('displayErrorMessage', src, 'License plate is already registered.')
+            -- Display error notification
+            TriggerClientEvent('ox_lib:notify', src, {
+                title = "Error",
+                description = "Insufficient funds to register the vehicle.",
+                type = "error"
+            })
             return
         end
 
-        -- Set the vehicle as owned using NDCore function
-        local vehicleId = NDCore.setVehicleOwned(player.id, vehicleProps, true)
+-- Check if the license plate is already registered
+if IsPlateAlreadyRegistered(vehicleProps.plate) then
+    print('License plate is already registered.')
 
-        if vehicleId then
-            print('Vehicle registered with ID: ' .. vehicleId)
-            Wait(500) -- Wait for a moment to ensure the player is out of the vehicle
-            -- Spawn the vehicle after registration
-            local coords = GetEntityCoords(GetPlayerPed(src))
-            local spawnCoords = vec4(coords.x, coords.y, coords.z, coords.w or coords.heading or 0.0)
-            local spawnedVehicle = SpawnVehicle(src, vehicleId, spawnCoords)
+    -- Display error notification
+    TriggerClientEvent('ox_lib:notify', src, {
+        title = "Error",
+        description = "License plate is already registered.",
+        type = "inform",
+        duration = 5000, -- Duration in milliseconds (5 seconds)
+        position = "top-right", -- Position of the notification on the screen
+        style = {
+            backgroundColor = "#FFFFFF", -- White background
+            color = "#850007", -- Navy blue text
+            border = "2px solid #850007", -- Navy blue border
+            padding = "15px", -- Padding around the content
+            fontFamily = "Arial, sans-serif", -- Font family
+            borderRadius = "5px", -- Rounded corners
+            boxShadow = "2px 2px 5px rgba(0, 0, 0, 0.3)", -- Shadow effect
+            icon = "https://example.com/usps_eagle_icon.png" -- URL to USPS eagle icon
+        },
+        icon = 'fa-solid fa-car',
+        iconColor = '#850007'
+    })
+    })
+    return
+end
 
-            if spawnedVehicle then
-                print('Vehicle spawned successfully.')
-            
-                -- Display success chat message on the client
-                TriggerEvent('displaySuccessMessage', src, 'Vehicle registered and spawned successfully!')
-            
-                -- Wait for a moment to ensure the player has fully exited the vehicle
-                Wait(500)
-            
-                -- Teleport the player into the spawned vehicle
-                local vehicleHandle = NetworkGetEntityFromNetworkId(spawnedVehicle.netId)
-                TaskWarpPedIntoVehicle(GetPlayerPed(src), vehicleHandle, -1)
+
+
+        -- Deduct registration fee from player's account
+        local success = player.deductMoney("bank", registrationFee, "Vehicle Registration")
+        
+        if success then
+            TriggerClientEvent('deleteRegVeh', src)
+            -- Send registration fee notification
+            TriggerClientEvent('ox_lib:notify', src, {
+                title = "Registration Fee",
+                description = "To register your vehicle, a fee of $ will be deducted from your bank account.",
+                type = "inform",
+                duration = 5000, -- Duration in milliseconds (5 seconds)
+                position = "top-right", -- Position of the notification on the screen
+                style = {
+                    backgroundColor = "#FFFFFF", -- White background
+                    color = "#3461eb", -- Navy blue text
+                    border = "2px solid #3461eb", -- Navy blue border
+                    padding = "15px", -- Padding around the content
+                    fontFamily = "Arial, sans-serif", -- Font family
+                    borderRadius = "5px", -- Rounded corners
+                    boxShadow = "2px 2px 5px rgba(0, 0, 0, 0.3)", -- Shadow effect
+                    icon = "https://example.com/usps_eagle_icon.png" -- URL to USPS eagle icon
+                },
+                icon = 'fa-solid fa-car',
+                iconColor = '#3461eb'
+            })
+            print('Registration fee deducted successfully.')
+
+            -- Set the vehicle as owned using NDCore function
+            local vehicleId = NDCore.setVehicleOwned(player.id, vehicleProps, true)
+
+            if vehicleId then
+                print('Vehicle registered with ID: ' .. vehicleId)
+                Wait(500) -- Wait for a moment to ensure the player is out of the vehicle
+                -- Spawn the vehicle after registration
+                local coords = GetEntityCoords(GetPlayerPed(src))
+                local spawnCoords = vec4(coords.x, coords.y, coords.z, coords.w or coords.heading or 0.0)
+                local spawnedVehicle = SpawnVehicle(src, vehicleId, spawnCoords)
+
+                if spawnedVehicle then
+                    print('Vehicle spawned successfully.')
+                
+                    -- Display success notification
+                    TriggerClientEvent('ox_lib:notify', src, {
+                        title = "Success",
+                        description = "Vehicle registered and spawned successfully!",
+                        type = "inform",
+                        duration = 5000, -- Duration in milliseconds (5 seconds)
+                        position = "top-right", -- Position of the notification on the screen
+                        style = {
+                            backgroundColor = "#FFFFFF", -- White background
+                            color = "#3461eb", -- Navy blue text
+                            border = "2px solid #3461eb", -- Navy blue border
+                            padding = "15px", -- Padding around the content
+                            fontFamily = "Arial, sans-serif", -- Font family
+                            borderRadius = "5px", -- Rounded corners
+                            boxShadow = "2px 2px 5px rgba(0, 0, 0, 0.3)", -- Shadow effect
+                            icon = "https://example.com/usps_eagle_icon.png" -- URL to USPS eagle icon
+                        },
+                        icon = 'fa-solid fa-car',
+                        iconColor = '#3461eb'
+                    })
+                
+                    -- Wait for a moment to ensure the player has fully exited the vehicle
+                    Wait(500)
+                
+                    -- Teleport the player into the spawned vehicle
+                    local vehicleHandle = NetworkGetEntityFromNetworkId(spawnedVehicle.netId)
+                    TaskWarpPedIntoVehicle(GetPlayerPed(src), vehicleHandle, -1)
+                else
+                    print('Failed to spawn the vehicle. Check SpawnVehicle implementation.')
+                
+                    -- Display error notification
+                    TriggerClientEvent('ox_lib:notify', src, {
+                        title = "Failed",
+                        description = "Failed to spawn the vehicle. Check implementation.",
+                        type = "inform",
+                        duration = 5000, -- Duration in milliseconds (5 seconds)
+                        position = "top-right", -- Position of the notification on the screen
+                        style = {
+                            backgroundColor = "#FFFFFF", -- White background
+                            color = "#850007", -- Navy blue text
+                            border = "2px solid #850007", -- Navy blue border
+                            padding = "15px", -- Padding around the content
+                            fontFamily = "Arial, sans-serif", -- Font family
+                            borderRadius = "5px", -- Rounded corners
+                            boxShadow = "2px 2px 5px rgba(0, 0, 0, 0.3)", -- Shadow effect
+                            icon = "https://example.com/usps_eagle_icon.png" -- URL to USPS eagle icon
+                        },
+                        icon = 'fa-solid fa-car',
+                        iconColor = '#850007'
+                    })
+                end
             else
-                print('Failed to spawn the vehicle. Check SpawnVehicle implementation.')
-            
-                -- Display error chat message on the client
-                TriggerEvent('displayErrorMessage', src, 'Failed to spawn the vehicle. Check implementation.')
+                print('Failed to register the vehicle. Check setVehicleOwned implementation.')
+
+                -- Display error notification
+                TriggerClientEvent('ox_lib:notify', src, {
+                    title = "Failed",
+                    description = "Failed to register the vehicle. Check implementation.",
+                    type = "inform",
+                    duration = 5000, -- Duration in milliseconds (5 seconds)
+                    position = "top-right", -- Position of the notification on the screen
+                    style = {
+                        backgroundColor = "#FFFFFF", -- White background
+                        color = "#850007", -- Navy blue text
+                        border = "2px solid #850007", -- Navy blue border
+                        padding = "15px", -- Padding around the content
+                        fontFamily = "Arial, sans-serif", -- Font family
+                        borderRadius = "5px", -- Rounded corners
+                        boxShadow = "2px 2px 5px rgba(0, 0, 0, 0.3)", -- Shadow effect
+                        icon = "https://example.com/usps_eagle_icon.png" -- URL to USPS eagle icon
+                    },
+                    icon = 'fa-solid fa-car',
+                    iconColor = '#850007'
+                })
             end
         else
-            print('Failed to register the vehicle. Check setVehicleOwned implementation.')
+            print('Failed to deduct registration fee from player account.')
 
-            -- Display error chat message on the client
-            TriggerEvent('displayErrorMessage', src, 'Failed to register the vehicle. Check implementation.')
+            -- Display error notification
+            TriggerClientEvent('ox_lib:notify', src, {
+                title = "Failed",
+                description = "Failed to deduct registration fee from player account.",
+                type = "inform",
+                duration = 5000, -- Duration in milliseconds (5 seconds)
+                position = "top-right", -- Position of the notification on the screen
+                style = {
+                    backgroundColor = "#FFFFFF", -- White background
+                    color = "#850007", -- Navy blue text
+                    border = "2px solid #850007", -- Navy blue border
+                    padding = "15px", -- Padding around the content
+                    fontFamily = "Arial, sans-serif", -- Font family
+                    borderRadius = "5px", -- Rounded corners
+                    boxShadow = "2px 2px 5px rgba(0, 0, 0, 0.3)", -- Shadow effect
+                    icon = "https://example.com/usps_eagle_icon.png" -- URL to USPS eagle icon
+                },
+                icon = 'fa-solid fa-car',
+                iconColor = '#850007'
+            })
         end
     else
         print('Player not found for source ' .. src)
 
-        -- Display error chat message on the client
-        TriggerEvent('displayErrorMessage', src, 'Player not found for source.')
+        -- Display error notification
+        TriggerClientEvent('ox_lib:notify', src, {
+            title = "Failed",
+            description = "Player not found for source.",
+            type = "inform",
+            duration = 5000, -- Duration in milliseconds (5 seconds)
+            position = "top-right", -- Position of the notification on the screen
+            style = {
+                backgroundColor = "#FFFFFF", -- White background
+                color = "#850007", -- Navy blue text
+                border = "2px solid #850007", -- Navy blue border
+                padding = "15px", -- Padding around the content
+                fontFamily = "Arial, sans-serif", -- Font family
+                borderRadius = "5px", -- Rounded corners
+                boxShadow = "2px 2px 5px rgba(0, 0, 0, 0.3)", -- Shadow effect
+                icon = "https://example.com/usps_eagle_icon.png" -- URL to USPS eagle icon
+            },
+            icon = 'fa-solid fa-car',
+            iconColor = '#850007'
+        })
     end
 end)
+
+
+
 
 function SpawnVehicle(source, vehicleId, spawnCoords)
     local player = NDCore.getPlayer(source)
@@ -85,6 +237,7 @@ function SpawnVehicle(source, vehicleId, spawnCoords)
 
     -- Update the stored status of the vehicle to 0 (not stored)
     MySQL.Async.execute("UPDATE nd_vehicles SET stored = ? WHERE id = ?", {0, vehicleId})
+
 
     -- Create and return the spawned vehicle
     local spawnedVehicle = NDCore.createVehicle({
