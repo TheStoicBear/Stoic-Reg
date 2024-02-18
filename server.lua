@@ -49,7 +49,6 @@ if IsPlateAlreadyRegistered(vehicleProps.plate) then
         icon = 'fa-solid fa-car',
         iconColor = '#850007'
     })
-    })
     return
 end
 
@@ -63,7 +62,7 @@ end
             -- Send registration fee notification
             TriggerClientEvent('ox_lib:notify', src, {
                 title = "Registration Fee",
-                description = "To register your vehicle, a fee of $ will be deducted from your bank account.",
+                description = "To register your vehicle, a fee of $ " .. registrationFee .. " will be deducted from your bank account.",
                 type = "inform",
                 duration = 5000, -- Duration in milliseconds (5 seconds)
                 position = "top-right", -- Position of the notification on the screen
