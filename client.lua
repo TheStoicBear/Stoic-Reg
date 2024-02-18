@@ -18,7 +18,7 @@ RegisterCommand('reg', function()
         -- Display error chat message if not in a valid vehicle
         TriggerEvent('chatMessage', 'SYSTEM', {255, 0, 0}, 'You are not in a valid vehicle.')
     end
-end, false)
+end)
 
 -- Event to display success chat message when the vehicle registration is successful
 RegisterNetEvent('displaySuccessMessage')
